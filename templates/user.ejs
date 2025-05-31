@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up</title>
+    <style>
+        /* Soft and Wavy Background */
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f5f5f5; /* Softer background */
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Lighter Wavy Pattern */
+        body::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(220, 220, 220, 0.1) 0px,
+                rgba(220, 220, 220, 0.1) 10px,
+                rgba(255, 255, 255, 1) 20px
+            );
+            opacity: 0.8; /* Softer effect */
+            z-index: -1;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.8); /* Semi-transparent effect */
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            width: 350px;
+        }
+
+        h2 {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 20px;
+            font-size: 16px;
+            background-color: black;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: not-allowed;
+            transition: background 0.3s ease;
+        }
+
+        button.active {
+            cursor: pointer;
+            background-color: #444;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>Sign Up</h2>
+        <form id="userForm">
+            <input type="text" id="name" placeholder="Enter your name" required>
+            <input type="email" id="email" placeholder="Enter your email" required>
+            <button type="submit" id="submitBtn" disabled>Submit</button>
+        </form>
+    </div>
+
+    <script>
+        const nameInput = document.getElementById("name");
+        const emailInput = document.getElementById("email");
+        const submitBtn = document.getElementById("submitBtn");
+
+        function checkInputs() {
+            if (nameInput.value.trim() !== "" && emailInput.value.trim() !== "") {
+                submitBtn.disabled = false;
+                submitBtn.classList.add("active");
+            } else {
+                submitBtn.disabled = true;
+                submitBtn.classList.remove("active");
+            }
+        }
+
+        nameInput.addEventListener("input", checkInputs);
+        emailInput.addEventListener("input", checkInputs);
+
+        document.getElementById("userForm").addEventListener("submit", function(event) {
+            event.preventDefault(); 
+            window.location.href = "/option"; // Redirect to option.html
+        });
+    </script>
+
+</body>
+</html>

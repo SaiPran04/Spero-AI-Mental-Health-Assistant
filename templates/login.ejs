@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spero - Welcome</title>
+    <style>
+        /* Wavy Background */
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: 'Arial', sans-serif;
+            text-align: center;
+            background-color: #f8f8f8;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* True Wavy Pattern */
+        body::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(200, 200, 200, 0.1) 0px,
+                rgba(200, 200, 200, 0.1) 10px,
+                rgba(255, 255, 255, 1) 20px
+            );
+            opacity: 1;
+            z-index: -1;
+        }
+
+        .container {
+            max-width: 600px;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        /* Highlight Box for Text */
+        .highlight-box {
+            background: rgba(255, 255, 255, 0.6); /* Semi-transparent white */
+            padding: 20px;
+            border-radius: 12px;
+            display: inline-block;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1); /* Soft shadow */
+        }
+
+        h1 {
+            font-size: 32px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        p {
+            font-size: 16px;
+            color: #555;
+            line-height: 1.5;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .buttons {
+            margin-top: 25px;
+        }
+
+        button {
+            margin: 10px;
+            padding: 12px 24px;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.3s ease;
+        }
+
+        .signup {
+            background-color: black;
+            color: white;
+            font-weight: bold;
+        }
+
+        .login {
+            background-color: lightgray;
+            color: black;
+            font-weight: bold;
+        }
+
+        button:hover {
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="highlight-box">
+            <h1>Say Hi! to Spero</h1>
+            <p>Spero is a gentle, hope-inspired mental health companion designed to offer empathetic support, practical coping strategies, and a listening ear.</p>
+        </div>
+        <div class="buttons">
+            <button class="signup" onclick="window.location.href='/user'">Sign Up</button>
+            <button class="login" onclick="window.location.href='/user'">Login</button>
+        </div>
+    </div>
+</body>
+</html>

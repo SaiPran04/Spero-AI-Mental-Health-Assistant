@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spero - Choose Mode</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+            background-color: #f8f8f8;
+            background-image: linear-gradient(white 50%, #f8f8f8 50%), 
+                              url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="10"><path d="M0 5 Q 25 -5 50 5 T 100 5" fill="transparent" stroke="%23ddd" stroke-width="1"/></svg>');
+            background-size: 100% 20px;
+        }
+        .container {
+            display: flex;
+            gap: 20px;
+        }
+        .card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 250px;
+            overflow: hidden;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+        .card .header {
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .lift { background: linear-gradient(to bottom, #7a3db8, black); }
+        .delve { background: linear-gradient(to bottom, #ff5722, black); }
+        .checkup { background: linear-gradient(to bottom, #0a8f08, black); }
+        .content {
+            padding: 20px;
+        }
+        .card button {
+            margin-top: 10px;
+            padding: 10px;
+            width: 100px;
+            border: none;
+            background: black;
+            color: white;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="header lift">Lift</div>
+            <div class="content">
+                <p>Chat here to feel better, dump your heart out</p>
+                <button onclick="window.location.href='{{ url_for('home') }}'">Choose</button>
+            </div>
+        </div>
+        <div class="card">
+            <div class="header delve">Delve</div>
+            <div class="content">
+                <p>Pick a specific topic—like anxiety or relationship issues</p>
+                <button onclick="window.location.href='{{ url_for('home') }}'">Choose</button>
+            </div>
+        </div>
+        <div class="card">
+            <div class="header checkup">CheckUp</div>
+            <div class="content">
+                <p>Share symptoms for guidance toward possible diagnoses</p>
+                <button onclick="window.location.href='{{ url_for('home') }}'">Choose</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
