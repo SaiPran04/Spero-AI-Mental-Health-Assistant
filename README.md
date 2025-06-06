@@ -1,82 +1,88 @@
 # Mental Health App AI Chatbot
 
-This is a locally hosted AI chatbot designed for mental health support, built using Flask and Node.js backends with SQLite for data storage. The chatbot utilizes the Ollama LLaMA 3.2 3B model running on a local machine.
-
-It features user authentication, persistent chat history, and a user-friendly interface that allows individuals to interact securely and privately with an AI chatbot.
+This is a locally hosted mental health AI chatbot built using Flask (Python) with support for both local LLaMA 3B model (via Ollama) and Gemini API integration. It offers secure user authentication, persistent chat history, and a clean, user-friendly interface.
+Users can interact with an AI chatbot for mental wellness conversations—either using locally run models or cloud-based Gemini responses—based on availability or preference.
 
 ## Features
-- **User Authentication**: Users must sign up or log in before accessing the chatbot.
-- **Chat Storage**: Stores conversations in `chat_logs.db` associated with each user.
-- **Chat History Sidebar**: Displays previous chats for logged-in users.
-- **Locally Hosted AI**: Uses **Ollama LLaMA 3 3B** to generate responses.
-- **Logout Option**: Users can log out to end their session.
-- **Multiple Backend Options**: Available in both Flask (Python) and Node.js (JavaScript).
-
+- **User Authentication: Secure sign-up and login for all users.
+- **Persistent Chat History: All conversations are stored in a local SQLite database (chat_logs.db).
+- **Chat History Sidebar: Allows users to review past conversations.
+- **Local AI (Offline): Uses Ollama LLaMA 3 3B model running on the local machine.
+- **Cloud AI (Online): Supports Gemini API for enhanced conversational quality.
+- **Flexible AI Backend: Choose between local and cloud models.
+- **Logout Option: End sessions securely.
+- **Entirely Flask-based Backend: Clean Python-only backend structure.
 
 ## Installation & Setup
 
 ### Prerequisites
 Ensure you have the following installed:
+
 - Python 3.8+
-- Node.js and npm (for Node.js backend)
-- Flask (`pip install flask`)
+- Flask: pip install flask
 - SQLite (included with Python)
-- Ollama (`ollama` must be installed and running locally)
-- LLaMA 3 3B model downloaded (`ollama pull llama3:3b`)
+- Ollama (ollama must be installed and configured)
+- Gemini API Key (obtain from Google AI Studio)
+- LLaMA 3B model pulled:
+  ollama pull llama3:3b
+
 
 ### Steps to Run
-1. Clone this repository:
-   ```bash
+
+1. Clone the repository:
    git clone <repository-url>
    cd ai-chatbot
-   ```
-2. Install dependencies:
-   ```bash
+
+2. Install Python dependencies:
    pip install -r requirements.txt
-   ```
-3. Start the Ollama LLaMA 3B model:
-   ```bash
+
+3. Set up your Gemini API key (optional for cloud use):
+   Create a .env file in the root directory:
+   GEMINI_API_KEY=your_api_key_here
+
+4. Run the Ollama LLaMA 3B model (for local AI):
    ollama run llama3:3b
-   ```
-4. Run the Flask application or Run the Nodejs application:
-   ```bash
+
+5. Start the Flask app:
    python app.py
-   npm start
-   ```
-5. Open your browser and go to:
-   ```
+
+6. Access the chatbot at:
    http://127.0.0.1:5000/
-   or
-   http://localhost:3000/
-   ```
 
 ## File Structure
-- `app.py` - Main Flask backend handling user authentication, chat history, and AI response generation.
-- `app.js` - Node.js backend
-- `local_llm.py` - Python Ollama API interface for Flask
-- `local_llm.ls` - JavaScript Ollama API interface
-- `chat_logs.db` - SQLite database storing user credentials and chat history.
-- `templates/`
-  - `index.html` - Chatbot UI with chat history.
-  - `index.ejs` - Node.js chat UI
-  - `login.html` - Login page.
-  - `login.ejs` - Node.js login page UI
-  - `user.html` - Signup page.
-  - `user.ejs` - Node.js Signup page UI
-- `static/` - Contains CSS/JS files if needed.
-- `package.json` - Node.js config
-- `README.md` - Project documentation
-  
+
+├── app.py              # Main Flask backend
+├── local_llm.py        # Ollama LLaMA 3B response handler
+├── gemini_api.py       # Gemini API response handler
+├── chat_logs.db        # SQLite database
+├── templates/
+│   ├── index.html      # Chat UI
+│   ├── login.html      # Login page
+│   ├── user.html       # Signup page
+├── static/             # CSS/JS assets
+├── requirements.txt    # Python dependencies
+├── .env                # (Your Gemini API Key goes here)
+└── README.md
+
 ## How It Works
-- When a user accesses the chatbot, they are prompted to **Sign Up** or **Login**.
-- After logging in, their **previous chats are loaded from SQLite**.
-- New chat messages are **sent to the Ollama LLaMA 3B model** for response generation.
-- Conversations are stored and can be accessed later.
-   
-   ## Notes
-   - The chatbot runs **entirely locally**; no external API calls are required.
-   - Ensure **Ollama is running** before starting the Flask app or Nodejs.
-- The SQLite database is lightweight and stores user authentication and chat data.
+1. On accessing the chatbot, users are prompted to Sign Up or Login.
+2. After login, previous conversations are fetched from SQLite.
+3. When a user sends a message:
+   - If Gemini API is active and configured, the response is generated using Gemini.
+   - If not, the message is routed to the local LLaMA 3B model via Ollama.
+4. Conversations are stored and associated with each user for future reference.
+
+## Notes
+- The Gemini integration is optional; the app functions fully offline using the LLaMA model.
+- Ensure Ollama is running if using the local model.
+- Data is stored locally and securely; no cloud storage is involved unless using Gemini API.
+
+## Future Improvements
+- Allow users to toggle between LLaMA and Gemini manually from the UI.
+- Add user mood tracking and sentiment analysis.
+- Enhance frontend with animations and voice input/output.
+
+This chatbot enables private, local-first mental health support with the option to extend capabilities through Gemini AI—suitable for personal or enterprise-level deployments.
 
 ## Future Improvements
 - Add support for multiple AI models.
@@ -88,6 +94,3 @@ This chatbot is a great example of running **AI models locally** for personal or
 it facilitates an insightful conversation between AI and user.
 
 
-Group: Penguin
-Rishabh, Pratosh, Harshal, Praneeth
-for query mail : 2022A3PS0485H
