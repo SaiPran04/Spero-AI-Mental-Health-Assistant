@@ -61,11 +61,11 @@ Ensure you have the following installed:
 
 ├── templates/
 
-│   ├── index.html      # Chat UI
+│     ├── index.html      # Chat UI
 
-│   ├── login.html      # Login page
+│     ├── login.html      # Login page
 
-│   ├── user.html       # Signup page
+│     ├── user.html       # Signup page
 
 ├── static/             # CSS/JS assets
 
