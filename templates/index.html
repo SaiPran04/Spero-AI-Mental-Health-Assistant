@@ -142,31 +142,44 @@
         }
         
         .chat-item {
-            padding: 10px 15px;
+            padding: 12px;
+            border-bottom: 1px solid #eee;
             cursor: pointer;
-            border-bottom: 1px solid #333;
             transition: background-color 0.2s;
         }
         
         .chat-item:hover {
-            background-color: #2a2b32;
+            background-color: #f5f5f5;
         }
         
         .chat-item.active {
-            background-color: #343541;
+            background-color: #e3f2fd;
         }
         
         .chat-date {
-            font-size: 12px;
-            color: #888;
-            margin-bottom: 5px;
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 4px;
         }
         
         .chat-preview {
-            font-size: 14px;
+            font-size: 0.95em;
+            color: #333;
+            margin-bottom: 4px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+        }
+        
+        .message-count {
+            font-size: 0.8em;
+            color: #888;
+        }
+        
+        .no-history {
+            padding: 20px;
+            text-align: center;
+            color: #666;
         }
         
         .content {
@@ -451,71 +464,46 @@
             // Load chat history
             function loadChatHistory() {
                 return fetch('/get_chat_history')
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error('Network response was not ok');
-                        }
-                        return response.json();
-                    })
+                    .then(response => response.json())
                     .then(data => {
-                        console.log('Chat history loaded:', data);
                         chatHistory.innerHTML = '';
                         
-                        if (!data.conversations || data.conversations.length === 0) {
-                            chatHistory.innerHTML = '<div class="no-history">No chat history found</div>';
-                            return data;
-                        }
-                        
-                        // Group conversations by time periods
-                        const today = new Date().toISOString().split('T')[0];
-                        const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
-                        
-                        let hasToday = false;
-                        let hasYesterday = false;
-                        let hasPrevious = false;
-                        
-                        data.conversations.forEach(conv => {
-                            if (conv.date === today && !hasToday) {
-                                chatHistory.innerHTML += `<div class="time-section">Today</div>`;
-                                hasToday = true;
-                            } else if (conv.date === yesterday && !hasYesterday) {
-                                chatHistory.innerHTML += `<div class="time-section">Yesterday</div>`;
-                                hasYesterday = true;
-                            } else if (conv.date !== today && conv.date !== yesterday && !hasPrevious) {
-                                chatHistory.innerHTML += `<div class="time-section">Previous 7 Days</div>`;
-                                hasPrevious = true;
-                            }
-                            
-                            chatHistory.innerHTML += `
-                                <div class="chat-item" data-date="${conv.date}">
-                                    <div class="chat-date">${formatDate(conv.date)}</div>
-                                    <div class="chat-preview">${conv.preview}</div>
-                                </div>
-                            `;
-                        });
-                        
-                        // Add event listeners to chat items
-                        document.querySelectorAll('.chat-item').forEach(item => {
-                            item.addEventListener('click', function() {
-                                const date = this.getAttribute('data-date');
-                                loadConversation(date);
-                                
-                                // Mark as active
-                                document.querySelectorAll('.chat-item').forEach(i => i.classList.remove('active'));
-                                this.classList.add('active');
-                                
-                                // Close sidebar on mobile
-                                if (window.innerWidth <= 576) {
-                                    closeSidebar();
-                                }
+                        if (data.conversations && data.conversations.length > 0) {
+                            data.conversations.forEach(conv => {
+                                chatHistory.innerHTML += `
+                                    <div class="chat-item" data-conversation-id="${conv.id}">
+                                        <div class="chat-date">${conv.date}</div>
+                                        <div class="chat-preview">${conv.preview}</div>
+                                        <div class="message-count">${conv.message_count} messages</div>
+                                    </div>
+                                `;
                             });
-                        });
+                            
+                            // Add event listeners to chat items
+                            document.querySelectorAll('.chat-item').forEach(item => {
+                                item.addEventListener('click', function() {
+                                    const conversationId = this.getAttribute('data-conversation-id');
+                                    loadConversation(conversationId);
+                                    
+                                    // Mark as active
+                                    document.querySelectorAll('.chat-item').forEach(i => i.classList.remove('active'));
+                                    this.classList.add('active');
+                                    
+                                    // Close sidebar on mobile
+                                    if (window.innerWidth <= 576) {
+                                        closeSidebar();
+                                    }
+                                });
+                            });
+                        } else {
+                            chatHistory.innerHTML = '<div class="no-history">No chat history found</div>';
+                        }
                         
                         return data;
                     })
                     .catch(error => {
                         console.error('Error loading chat history:', error);
-                        chatHistory.innerHTML = '<div class="no-history">Error loading chat history. Please try again.</div>';
+                        chatHistory.innerHTML = '<div class="no-history">Error loading chat history</div>';
                         return { conversations: [] };
                     });
             }
@@ -527,12 +515,48 @@
             }
             
             // Load a specific conversation
-            function loadConversation(date) {
-                fetch(`/get_conversation/${date}`)
-                    .then(response => response.json())
+            function loadConversation(conversationId) {
+                console.log('Loading conversation for ID:', conversationId);
+                
+                // Clear current chat except welcome message
+                while (chatMessages.children.length > 1) {
+                    chatMessages.removeChild(chatMessages.lastChild);
+                }
+                
+                // Add loading message
+                const loadingDiv = document.createElement('div');
+                loadingDiv.classList.add('message', 'ai-message');
+                loadingDiv.textContent = 'Loading conversation...';
+                chatMessages.appendChild(loadingDiv);
+                
+                fetch(`/get_conversation/${encodeURIComponent(conversationId)}`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        return response.json();
+                    })
                     .then(data => {
-                        chatMessages.innerHTML = '';
+                        console.log('Received conversation data:', data);
                         
+                        // Remove loading message
+                        if (loadingDiv.parentNode === chatMessages) {
+                            chatMessages.removeChild(loadingDiv);
+                        }
+                        
+                        if (data.error) {
+                            console.error('Error loading conversation:', data.error);
+                            addMessage('Error loading conversation: ' + data.error, 'ai');
+                            return;
+                        }
+                        
+                        if (!data.messages || data.messages.length === 0) {
+                            console.log('No messages found in conversation');
+                            addMessage('No messages found in this conversation', 'ai');
+                            return;
+                        }
+                        
+                        // Add each message to the chat
                         data.messages.forEach(msg => {
                             addMessage(msg.user, 'user');
                             addMessage(msg.ai, 'ai');
@@ -542,7 +566,12 @@
                         chatMessages.scrollTop = chatMessages.scrollHeight;
                     })
                     .catch(error => {
-                        console.error('Error loading conversation:', error);
+                        console.error('Error:', error);
+                        // Remove loading message
+                        if (loadingDiv.parentNode === chatMessages) {
+                            chatMessages.removeChild(loadingDiv);
+                        }
+                        addMessage('Error loading conversation. Please try again.', 'ai');
                     });
             }
             
@@ -627,71 +656,6 @@
                             console.error('Error in reset process:', error);
                         });
                 }
-            }
-            
-            // Update loadChatHistory to return a promise
-            function loadChatHistory() {
-                return fetch('/get_chat_history')
-                    .then(response => response.json())
-                    .then(data => {
-                        chatHistory.innerHTML = '';
-                        
-                        // Group conversations by time periods
-                        const today = new Date().toISOString().split('T')[0];
-                        const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
-                        
-                        let hasToday = false;
-                        let hasYesterday = false;
-                        let hasPrevious = false;
-                        
-                        if (data.conversations && data.conversations.length > 0) {
-                            data.conversations.forEach(conv => {
-                                if (conv.date === today && !hasToday) {
-                                    chatHistory.innerHTML += `<div class="time-section">Today</div>`;
-                                    hasToday = true;
-                                } else if (conv.date === yesterday && !hasYesterday) {
-                                    chatHistory.innerHTML += `<div class="time-section">Yesterday</div>`;
-                                    hasYesterday = true;
-                                } else if (conv.date !== today && conv.date !== yesterday && !hasPrevious) {
-                                    chatHistory.innerHTML += `<div class="time-section">Previous 7 Days</div>`;
-                                    hasPrevious = true;
-                                }
-                                
-                                chatHistory.innerHTML += `
-                                    <div class="chat-item" data-date="${conv.date}">
-                                        <div class="chat-date">${formatDate(conv.date)}</div>
-                                        <div class="chat-preview">${conv.preview}</div>
-                                    </div>
-                                `;
-                            });
-                            
-                            // Add event listeners to chat items
-                            document.querySelectorAll('.chat-item').forEach(item => {
-                                item.addEventListener('click', function() {
-                                    const date = this.getAttribute('data-date');
-                                    loadConversation(date);
-                                    
-                                    // Mark as active
-                                    document.querySelectorAll('.chat-item').forEach(i => i.classList.remove('active'));
-                                    this.classList.add('active');
-                                    
-                                    // Close sidebar on mobile
-                                    if (window.innerWidth <= 576) {
-                                        closeSidebar();
-                                    }
-                                });
-                            });
-                        } else {
-                            chatHistory.innerHTML = '<div class="no-history">No chat history found</div>';
-                        }
-                        
-                        return data;
-                    })
-                    .catch(error => {
-                        console.error('Error loading chat history:', error);
-                        chatHistory.innerHTML = '<div class="no-history">Error loading chat history</div>';
-                        return { conversations: [] };
-                    });
             }
             
             function saveCurrentChat() {

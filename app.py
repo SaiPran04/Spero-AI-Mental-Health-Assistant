@@ -1,20 +1,30 @@
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session, flash
 import sqlite3
 from datetime import datetime
-from local_llm import LocalLLM
+from gemini_llm import GeminiLLM
 import os
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'  # Add a secret key for session management
 
-# Set Ollama host environment variable
-os.environ['OLLAMA_HOST'] = 'http://localhost:11434'
+# Set Gemini API key environment variable
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
+if not GEMINI_API_KEY:
+    # Try to get API key from a file
+    try:
+        with open('gemini_api_key.txt', 'r') as f:
+            GEMINI_API_KEY = f.read().strip()
+    except FileNotFoundError:
+        print("Please set your Gemini API key in one of these ways:")
+        print("1. Set the GEMINI_API_KEY environment variable")
+        print("2. Create a file named 'gemini_api_key.txt' with your API key")
+        raise ValueError("Gemini API key not found")
 
-# Initialize LocalLLM with error handling
+# Initialize GeminiLLM with error handling
 try:
-    llm = LocalLLM()
+    llm = GeminiLLM(api_key=GEMINI_API_KEY)
 except Exception as e:
-    print(f"Error initializing LocalLLM: {str(e)}")
+    print(f"Error initializing GeminiLLM: {str(e)}")
     llm = None
 
 # Initialize chat history
@@ -42,9 +52,17 @@ def init_db():
             user_message TEXT,
             ai_response TEXT,
             user_id INTEGER,
+            conversation_id TEXT,
             FOREIGN KEY (user_id) REFERENCES users (id)
         )
     """)
+    
+    # Add conversation_id column if it doesn't exist
+    try:
+        c.execute("ALTER TABLE chat_logs ADD COLUMN conversation_id TEXT")
+    except sqlite3.OperationalError:
+        # Column already exists
+        pass
     
     conn.commit()
     conn.close()
@@ -173,12 +191,16 @@ def chat():
         return jsonify({'response': 'Sorry, the AI model is currently unavailable. Please try again later.'})
     
     try:
+        print(f"Attempting to get response for message: {user_message[:50]}...")
         ai_response = llm.chat(user_message)
         store_chat_log(user_message, ai_response, session['user_id'])
         return jsonify({'response': ai_response})
     except Exception as e:
         error_message = f"Error generating response: {str(e)}"
         print(error_message)
+        print("Full error details:")
+        import traceback
+        print(traceback.format_exc())
         # Return more detailed error in development mode
         if app.debug:
             return jsonify({'response': f'Debug error info: {error_message}'})
@@ -196,96 +218,130 @@ def reset():
 
 @app.route('/save_chat', methods=['POST'])
 def save_chat():
-    if 'user_id' not in session:
-        return jsonify({'error': 'Not logged in'})
-    
-    data = request.json
-    messages = data.get('messages', [])
-    
-    if not messages:
-        return jsonify({'status': 'error', 'message': 'No messages to save'})
-    
-    user_id = session['user_id']
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    
-    conn = sqlite3.connect('chat_logs.db')
-    c = conn.cursor()
-    
-    # Save each message pair
-    for msg in messages:
-        user_message = msg.get('user', '')
-        ai_response = msg.get('ai', '')
+    try:
+        if 'user_id' not in session:
+            print("User not logged in when saving chat")
+            return jsonify({'error': 'Not logged in'})
         
-        c.execute("INSERT INTO chat_logs (timestamp, user_message, ai_response, user_id) VALUES (?, ?, ?, ?)",
-                  (timestamp, user_message, ai_response, user_id))
-    
-    conn.commit()
-    conn.close()
-    
-    return jsonify({'status': 'success', 'message': 'Chat saved successfully'})
+        data = request.json
+        messages = data.get('messages', [])
+        
+        if not messages:
+            print("No messages to save")
+            return jsonify({'status': 'error', 'message': 'No messages to save'})
+        
+        user_id = session['user_id']
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        print(f"Saving {len(messages)} messages for user_id: {user_id} with timestamp: {timestamp}")
+        
+        conn = sqlite3.connect('chat_logs.db')
+        c = conn.cursor()
+        
+        # Create a conversation_id using the exact timestamp
+        conversation_id = timestamp
+        
+        # Save each message pair with the same conversation_id
+        for msg in messages:
+            user_message = msg.get('user', '')
+            ai_response = msg.get('ai', '')
+            
+            c.execute("""
+                INSERT INTO chat_logs (timestamp, user_message, ai_response, user_id, conversation_id)
+                VALUES (?, ?, ?, ?, ?)
+            """, (timestamp, user_message, ai_response, user_id, conversation_id))
+        
+        conn.commit()
+        conn.close()
+        print("Chat saved successfully with conversation_id:", conversation_id)
+        return jsonify({'status': 'success', 'message': 'Chat saved successfully'})
+    except Exception as e:
+        print(f"Error in save_chat: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/get_chat_history')
 def get_chat_history():
-    if 'user_id' not in session:
-        print("User not logged in when requesting chat history")
-        return jsonify({'error': 'Not logged in'})
-    
-    user_id = session['user_id']
-    
-    conn = sqlite3.connect('chat_logs.db')
-    c = conn.cursor()
-    
-    # Get unique conversations based on timestamp (grouped by date)
-    c.execute("""
-        SELECT 
-            strftime('%Y-%m-%d', timestamp) as chat_date,
-            MIN(id) as first_message_id,
-            substr(user_message, 1, 30) as preview,
-            MAX(timestamp) as latest_timestamp
-        FROM chat_logs 
-        WHERE user_id = ? 
-        GROUP BY chat_date
-        ORDER BY latest_timestamp DESC
-    """, (user_id,))
-    
-    conversations = []
-    for row in c.fetchall():
-        conversations.append({
-            'date': row[0],
-            'id': row[1],
-            'preview': row[2] + '...' if len(row[2]) >= 30 else row[2]
-        })
-    
-    conn.close()
-    return jsonify({'conversations': conversations})
+    try:
+        if 'user_id' not in session:
+            print("User not logged in when requesting chat history")
+            return jsonify({'error': 'Not logged in'})
+        
+        user_id = session['user_id']
+        print(f"Fetching chat history for user_id: {user_id}")
+        
+        conn = sqlite3.connect('chat_logs.db')
+        c = conn.cursor()
+        
+        # Get unique conversations based on conversation_id
+        # We also select the conversation_id here
+        c.execute("""
+            SELECT 
+                conversation_id,
+                MIN(timestamp) as timestamp,
+                MIN(id) as first_message_id,
+                substr(user_message, 1, 30) as preview,
+                COUNT(*) as message_count
+            FROM chat_logs 
+            WHERE user_id = ? AND user_message != 'Conversation Start'
+            GROUP BY conversation_id
+            ORDER BY timestamp DESC
+        """, (user_id,))
+        
+        conversations = []
+        for row in c.fetchall():
+            # Format the timestamp to show date and time
+            timestamp = datetime.strptime(row[1], "%Y-%m-%d %H:%M:%S")
+            formatted_time = timestamp.strftime("%B %d, %Y at %I:%M %p")
+            
+            conversations.append({
+                'id': row[0], # Use conversation_id here
+                'date': formatted_time,
+                'preview': row[3] + '...' if len(row[3]) >= 30 else row[3],
+                'message_count': row[4]
+            })
+        
+        print(f"Found {len(conversations)} conversations")
+        conn.close()
+        return jsonify({'conversations': conversations})
+    except Exception as e:
+        print(f"Error in get_chat_history: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
-@app.route('/get_conversation/<date>')
-def get_conversation(date):
-    if 'user_id' not in session:
-        return jsonify({'error': 'Not logged in'})
-    
-    user_id = session['user_id']
-    
-    conn = sqlite3.connect('chat_logs.db')
-    c = conn.cursor()
-    
-    # Get all messages for a specific date
-    c.execute("""
-        SELECT user_message, ai_response
-        FROM chat_logs 
-        WHERE user_id = ? AND strftime('%Y-%m-%d', timestamp) = ?
-        ORDER BY timestamp ASC
-    """, (user_id, date))
-    
-    messages = []
-    for row in c.fetchall():
-        messages.append({
-            'user': row[0],
-            'ai': row[1]
-        })
-    
-    conn.close()
-    return jsonify({'messages': messages})
+@app.route('/get_conversation/<conversation_id>')
+def get_conversation(conversation_id):
+    try:
+        if 'user_id' not in session:
+            print("User not logged in when loading conversation")
+            return jsonify({'error': 'Not logged in'})
+        
+        user_id = session['user_id']
+        print(f"Loading conversation for user_id: {user_id}, conversation_id: {conversation_id}")
+        
+        conn = sqlite3.connect('chat_logs.db')
+        c = conn.cursor()
+        
+        # Get all messages for this conversation using the conversation_id
+        c.execute("""
+            SELECT user_message, ai_response
+            FROM chat_logs 
+            WHERE user_id = ? 
+            AND conversation_id = ? 
+            AND user_message != 'Conversation Start'
+            ORDER BY id ASC
+        """, (user_id, conversation_id))
+        
+        messages = []
+        for row in c.fetchall():
+            messages.append({
+                'user': row[0],
+                'ai': row[1]
+            })
+        
+        print(f"Found {len(messages)} messages for conversation {conversation_id}")
+        conn.close()
+        return jsonify({'messages': messages})
+    except Exception as e:
+        print(f"Error in get_conversation: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
