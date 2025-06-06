@@ -54,15 +54,25 @@ Ensure you have the following installed:
 ├── app.py              # Main Flask backend
 
 ├── local_llm.py        # Ollama LLaMA 3B response handler
+
 ├── gemini_api.py       # Gemini API response handler
+
 ├── chat_logs.db        # SQLite database
+
 ├── templates/
+
 │   ├── index.html      # Chat UI
+
 │   ├── login.html      # Login page
+
 │   ├── user.html       # Signup page
+
 ├── static/             # CSS/JS assets
+
 ├── requirements.txt    # Python dependencies
+
 ├── .env                # (Your Gemini API Key goes here)
+
 └── README.md
 
 ## How It Works
