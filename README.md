@@ -52,6 +52,7 @@ Ensure you have the following installed:
 ## File Structure
 
 ├── app.py              # Main Flask backend
+
 ├── local_llm.py        # Ollama LLaMA 3B response handler
 ├── gemini_api.py       # Gemini API response handler
 ├── chat_logs.db        # SQLite database
